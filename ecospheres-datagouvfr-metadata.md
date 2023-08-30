@@ -111,6 +111,28 @@ OpenDataSoft est capable d'exposer un point de contact dans son export RDF/DCAT 
 
 Ce formalisme semble correspondre aux bonnes pratiques, [par exemple dans les spécifications belges](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md#instanciation-de-dcatdataset) L'Organization gagnerait à être complétée par son label et son rôle.
 
+
+## Evolutions du modèle et de l'API data.gouv.fr
+
+Si des métadonnées sont précisées ou ajoutées à data.gouv.fr dans le cadre de ces travaux, il sera nécessaire de faire évoluer le modèle de données et l'API (au sens large mise à disposition programmatique des données).
+
+### Modèle
+
+Plusieurs possibilités :
+
+- Création de champs "libres" dans les dictionnaires `dataset.extras` et `resource.extras` avec des clés valeurs simples (i.e. pas d'objet/dictionnaire imbriqué) : solution simple et rapide qui ne permet pas de valider les valeurs ou de stocker des valeurs complexes. La recherche ne fonctionnera pas sur ces champs. Ils ne seront pas disponibles dans les formulaires. Ils seront disponibles dans l'API mais pas dans les [représentations RDF](https://www.data.gouv.fr/fr/datasets/bureaux-de-vote-et-adresses-de-leurs-electeurs/rdf.json), sauf développement.
+- Evolution du modèle "coeur" de `udata` avec la création de nouveaux champs des objets `Dataset` ou `Resource`. Solution qui demande plus de développement mais permet de modéliser n'importe quelle typologie. Rend possible : inclusion dans les formulaires, validation, sélection dans une liste de valeurs, indexation dans le moteur de recherche.
+
+Vu l'importance des vocabulaires contrôlées sur le périmètre qui nous intéresse, il pourra être intéressant de modéliser ce comportement de manière générique, peut-être dans un type de champ dédié. La métadonnée `spatial.zones` pourrait être un terrain d'expérimentation.
+
+### API
+
+L'[API JSON/REST](https://www.data.gouv.fr/api/1/) est facilement extensible pour inclure de nouveaux champs.
+
+En revanche, cette API n'est peut-être pas favorable à l'expression de concepts sémantiques type vocabulaires contrôlés. Il faudrait en effet transformer l'ensemble de la réponse en RDF par exemple pour exprimer correctement de tels concepts, ce qui n'est probablement pas envisageable.
+
+Chaque jeu de données et le catalogue dispose d'une exposition RDF multiformat, par exemple en [JSON](https://www.data.gouv.fr/fr/datasets/bureaux-de-vote-et-adresses-de-leurs-electeurs/rdf.json) ou en [XML](https://www.data.gouv.fr/fr/datasets/bureaux-de-vote-et-adresses-de-leurs-electeurs/rdf.xml). Ces points d'exposition pourraient être utilisés pour exprimer des spécificités sémantiques tel qu'une valeur d'un vocabulaire contrôlé.
+
 ## Annexes
 
 ### Export API CKAN `ckanext-spatial`
