@@ -109,8 +109,7 @@ OpenDataSoft est capable d'exposer un point de contact dans son export RDF/DCAT 
 </dcat:contactPoint>
 ```
 
-Ce formalisme semble correspondre aux bonnes pratiques, [par exemple dans les spécifications belges](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md#instanciation-de-dcatdataset) L'Organization gagnerait à être complétée par son label et son rôle.
-
+Ce formalisme semble correspondre aux bonnes pratiques, [par exemple dans les spécifications belges](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md#instanciation-de-dcatdataset). L'`Organization` gagnerait à être complétée par son label et son rôle.
 
 ## Evolutions du modèle et de l'API data.gouv.fr
 
@@ -129,9 +128,48 @@ Vu l'importance des vocabulaires contrôlées sur le périmètre qui nous intér
 
 L'[API JSON/REST](https://www.data.gouv.fr/api/1/) est facilement extensible pour inclure de nouveaux champs.
 
-En revanche, cette API n'est peut-être pas favorable à l'expression de concepts sémantiques type vocabulaires contrôlés. Il faudrait en effet transformer l'ensemble de la réponse en RDF par exemple pour exprimer correctement de tels concepts, ce qui n'est probablement pas envisageable.
+En revanche, cette API n'est peut-être pas favorable à l'expression de concepts sémantiques (e.g. vocabulaires contrôlés). Il faudrait en effet transformer l'ensemble de la réponse en RDF par exemple pour exprimer correctement de tels concepts, ce qui n'est probablement pas envisageable.
 
 Chaque jeu de données et le catalogue dispose d'une exposition RDF multiformat, par exemple en [JSON](https://www.data.gouv.fr/fr/datasets/bureaux-de-vote-et-adresses-de-leurs-electeurs/rdf.json) ou en [XML](https://www.data.gouv.fr/fr/datasets/bureaux-de-vote-et-adresses-de-leurs-electeurs/rdf.xml). Ces points d'exposition pourraient être utilisés pour exprimer des spécificités sémantiques tel qu'une valeur d'un vocabulaire contrôlé.
+
+On pourrait imaginer "sémantiser" une partie de la réponse API :
+
+```xml
+<dcat:theme rdf:resource="http://publications.europa.eu/resource/authority/data-theme/ENVI"/>
+```
+
+deviendrait 
+
+```json
+[...]
+"theme": {
+	"@context": {
+		"dcat": "http://www.w3.org/ns/dcat#"
+	},
+	"dcat:theme": "http://publications.europa.eu/resource/authority/data-theme/ENVI" 
+}
+[...]
+```
+
+Toutefois ce format ne correspond a priori à aucune spécification, ne permet pas de récupérer directement la valeur (dans ce cas `Environnement`) — ce qui pourrait être contourné en rajoutant un attribut `value`, est verbeux et mènerait à une duplication de contextes.
+
+Autre possibilité en travaillant au niveau de l'objet et en incluant du json-ld dans un payload json standard :
+
+```json
+{
+  "@context": {
+    "dcat": "http://www.w3.org/ns/dcat#"
+  },
+  "data" : {
+	[...]
+    "du": "json_normal"
+    [...]
+  },
+  "dcat:theme": "http://publications.europa.eu/resource/authority/data-theme/ENVI"
+}
+```
+
+Cette solution est bancale car l'ensemble du jeu de données ne sera pas interprétable en RDF. De plus, pour des attributs existants, il y aurait une collision ou une duplication entre l'ancien nom de l'attribut (e.g. `theme`) et le nouveau (`dcat:theme`).
 
 ## Annexes
 
