@@ -64,7 +64,7 @@ L'alimentation se fera :
 - via un champ de l'administration similaire à celui existant sur les geozones
 - *via le moissonnage : point non spécifié à date*
 
-> Piste de collaboration Ecosphères / data.gouv.Fr sur le remplissage de cette métadonnée au moissonnage avec la même mécanique que Ecosphères CKAN ?
+> Piste de collaboration Ecosphères / data.gouv.fr sur le remplissage de cette métadonnée au moissonnage avec la même mécanique que Ecosphères CKAN ?
 
 > A creuser :
 > - quid des autres vocabulaires utilisées par Ecosphères ? Seraient-ils utiles à data.gouv.fr ?
@@ -79,14 +79,30 @@ Pas d'évolution structurelle prévue sur ce point côté data.gouv.fr.
 > 
 > A noter : la géométrie n'est pas une métadonnée priorisée d'un point usager final Ecosphères.
 
-### Granularité spatiale
+### Granularité et résolution spatiales
+
+#### Granularité
 
 | Champ data.gouv.fr                     | Remplissage | Note |
 | ----------------------------- | ----------- | ---- |
 | `dataset.spatial.granularity` | 52%         |      |
 
-- homogénéité des valeurs : vocabulaire contrôlé à définir/utiliser
-- meilleur mapping au moissonnage
+data.gouv.fr utilise un notion de granularité spatiale qui n'est pas définie par INSPIRE. Cette métadonnée permet de spécifier à quelle maille géographique une "ligne" des données référencées se rapporte. Par exemple une liste des achats de pesticides par département aura une granularité spatiale "département". Le référentiel est celui des [niveaux des geozones](https://github.com/opendatateam/udata/blob/8bf8e516826bf72ee746f897a2e441508f3bdc12/udata/core/spatial/models.py#L290), augmenté des valeurs "POI" et "Autre".
+
+Au niveau moissonnage, cette métadonnée est supportée par OpenDataSoft seulement. Sachant cela, le taux de remplissage global est impressionnant ; peut-être parce que la métadonnée rentre dans le calcul de l'indicateur de qualité dans la partie "couverture spatiale" ?
+
+#### Résolution
+
+Métadonnée supportée par INSPIRE mais pas par data.gouv.fr, cf [analyse Ecosphères](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md#résolution-spatiale). Complexe à exprimer car en fonction du type de données.
+
+Les spécifications belges DCAT propose un mapping `dcat:Dataset,dqv:hasQualityMeasurement,dqv:QualityMeasurement`. Toutefois, on ne retrouve pas d'exemple de cette propriété dans le catalogue fédéral.
+
+CKAN avec `ckanext-spatial` calcule les attributs suivants issus des propriétés INSPIRE `gmd:spatialResolution/gmd:MD_Resolution` mais ne les expose pas par défaut :
+- `equivalent-scale`
+- `spatial-resolution`
+- `spatial-resolution-units`
+
+Pas de support constaté sur OpenDataSoft.
 
 ### Point de contact
 
@@ -110,6 +126,46 @@ OpenDataSoft est capable d'exposer un point de contact dans son export RDF/DCAT 
 ```
 
 Ce formalisme semble correspondre aux bonnes pratiques, [par exemple dans les spécifications belges](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md#instanciation-de-dcatdataset). L'`Organization` gagnerait à être complétée par son label et son rôle.
+
+### Catégorie thématique
+
+Cette propriété pioche dans un [vocabulaire contrôlé ISO](https://inspire.ec.europa.eu/metadata-codelist/TopicCategory), qui ne correspond _pas_ aux thèmes INSPIRE (un mapping indicatif est proposé dans le guide de saisie du CNIG).
+
+Le CNIG et les spécifications belges préconisent un mapping vers `dcat:Dataset,dct:Subject,skos:Concept`
+
+CKAN avec `ckanext-spatial` calcule `topic-category` le cas échéant mais ne l'expose pas par défaut.
+
+data.gouv.fr ne prend pas en compte cette propriété dans le moissonnage DCAT ou CKAN et ne possède pas de support de vocabulaire contrôlé.
+
+> Le support de cette propriété en tant que simple mot clé (cf ci-dessous) via le moissonneur DCAT est trivial.
+>Quels sont les usages réels de la propriété ?
+
+### Mots clés
+
+| Champ data.gouv.fr | Remplissage | Note |
+| ------------------ | ----------- | ---- |
+| `dataset.tags`     | 88%         |      |
+
+Cf [analyse Ecopshères](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md#mots-clés).
+
+data.gouv.fr supporte des mots clés en tant que liste de textes libres. Niveau moissonnage :
+- OpenDataSoft support natif
+- CKAN : propriété `tags`, provenant de `keyword-inspire-theme` et `keyword-controlled-other` pour `ckanext-spatial` (les deux propriétés INSPIRE recommandées)
+- DCAT : `DCAT.theme` et `DCAT.keyword`, concaténés
+
+Le principal facteur limitant est l'absence de support sur data.gouv.fr de vocabulaires contrôlés qui pourraient apporter améliorer l'interopérabilité de la plateforme et la lisibilité des métadonnées moissonnées.
+
+> Voir les réflexions sur le modèle et l'API ci-dessous pour le support de ces vocabulaires.
+
+On notera que CKAN n'expose pas non plus le vocabulaire utilisé dans les métadonnées INSPIRE le cas échéant. Seul le support de vocabulaires contrôlés via DCAT pourrait être ajouté par data.gouv.fr.
+
+### Formats
+
+XXX
+
+### Licence
+
+XXX
 
 ## Evolutions du modèle et de l'API data.gouv.fr
 
@@ -171,9 +227,49 @@ Autre possibilité en travaillant au niveau de l'objet et en incluant du json-ld
 
 Cette solution est bancale car l'ensemble du jeu de données ne sera pas interprétable en RDF. De plus, pour des attributs existants, il y aurait une collision ou une duplication entre l'ancien nom de l'attribut (e.g. `theme`) et le nouveau (`dcat:theme`).
 
+On peut noter que CKAN semble avoir adopté une approche spécifique pour le cas des vocabulaires contrôlés, par exemple pour un tag sur la plateforme Grand Est :
+
+```json
+      {
+        "vocabulary_id": null,
+        "state": "active",
+        "display_name": "données ouvertes",
+        "id": "9e9bd373-7d24-4765-9150-1136d250be3a",
+        "name": "données ouvertes"
+      }
+```
+
+Toutefois il s'agit de [vocabulaires spécifiques à l'instance CKAN](https://docs.ckan.org/en/2.9/maintaining/tag-vocabularies.html).
+
+Ecosphères [expose certaines métadonnées](https://preprod.data.developpement-durable.gouv.fr/api/3/action/package_show?id=fr-120066022-jdd-375ba6b7-1cc2-4a51-a59f-bfd3b96dbd86) sous forme d'URI. C'est une solution simple et efficace mais qui pose la question de la consommation de l'API qui ne porte pas l'information que tel ou tel attribut doit être interprété comme une ressource au sens RDF.
+
+```json
+[...]
+"result": 
+	{
+		"accrual_periodicity": "http://inspire.ec.europa.eu/metadata-codelist/MaintenanceFrequency/asNeeded",
+		"license": "https://spdx.org/licenses/etalab-2.0",
+		"license_id": null,
+		"license_title": null,
+	},
+[...]
+```
+
+data.gov (qui utilise CKAN) modélise également certains attributs sous forme d'URI dans les extras :
+
+```json
+"extras": [
+	{
+		"key": "catalog_conformsTo",
+		"value": "https://project-open-data.cio.gov/v1.1/schema"
+	}
+]
+```
 ## Annexes
 
 ### Export API CKAN `ckanext-spatial`
+
+NB : a priori cet export est augmenté par la plateforme vs les fonctionnalités par défaut du plugin, on y retrouve en effet des attributs ISO non exposés par défaut (eg `equivalent-scale`). On retrouve, selon notre compréhension, [les attributs exposés par défaut ici](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvesters/base.py#L233). L'ensemble des attributs ISO récupérés par le moissonneur mais pas forcément exposés est [ici](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvested_metadata.py).
 
 https://grandest-moissonnage.data4citizen.com/api/3/action/package_show?id=fr-200052264-commune_grand_est
 
