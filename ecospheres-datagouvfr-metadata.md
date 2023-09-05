@@ -29,8 +29,11 @@ On considérera également que data.gouv.fr est principalement alimenté par un 
 
 ## Références
 
-- [mapping RDF (DCAT) vers data.gouv.fr](https://github.com/opendatateam/udata/blob/550f32bb009a6409598264dff47ecb3cc696e5cb/udata/core/dataset/rdf.py#L448)
-- [moissonneur CKAN de data.gouv.fr](https://github.com/opendatateam/udata-ckan/) 
+- [Code : mapping RDF (DCAT) vers data.gouv.fr](https://github.com/opendatateam/udata/blob/550f32bb009a6409598264dff47ecb3cc696e5cb/udata/core/dataset/rdf.py#L448)
+- [Code : moissonneur CKAN de data.gouv.fr](https://github.com/opendatateam/udata-ckan/) 
+- [Guide de saisie des métadonnées INSPIRE du CNIG](https://cnig.gouv.fr/IMG/pdf/guide-de-saisie-des-elements-de-metadonnees-inspire-v2.0-1.pdf)
+- [Mapping DCAT / INSPIRE de data.gov.be](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md)
+- [Mapping DCAT / INSPIRE du CNIG (WIP)](https://github.com/cnigfr/metadonnee/tree/main/MappingINSPIRE-DCAT)
 
 ## Métadonnées
 
@@ -163,9 +166,38 @@ On notera que CKAN n'expose pas non plus le vocabulaire utilisé dans les métad
 
 XXX
 
-### Licence
+### Contraintes en matière d’accès et d’utilisation / Licence
 
-XXX
+| Champ data.gouv.fr | Remplissage | Note |
+| ------------------ | ----------- | ---- |
+| `dataset.license`     | 94%         |      |
+
+data.gouv.fr supporte un champ `license` qui prend son identifiant dans un [vocabulaire contrôlé spécifique](https://www.data.gouv.fr/api/1/datasets/licenses/). Ce vocabulaire est réutilisé par certaines plateformes moissonnées.
+
+Lors du moissonnage, les attributs suivants sont utilisés :
+- CKAN : `license_id` et `license_title`
+- DCAT : `dct:license` et `dct:right` au niveau des `Distributions`
+
+data.gouv.fr [tente de "deviner"](https://github.com/opendatateam/udata/blob/8bf8e516826bf72ee746f897a2e441508f3bdc12/udata/core/dataset/models.py#L186) la licence en fonction des différents champs du vocabulaire et le calcul d'une distance sémantique.
+
+INSPIRE propose des notions beaucoup plus large qu'une simple licence :
+- Restrictions d’accès public : pas de restriction d’accès public ou [une des exceptions prévues par INSPIRE (vocabulaire)](https://inspire.ec.europa.eu/metadata-codelist/LimitationsOnPublicAccess)
+- Conditions légales applicables à l’accès et à l’utilisation : pas de condition, tarification... et **le cas particulier de la licence**
+- D'autres contraintes qui ne rentreraient pas dans les cas précédents
+#### Evolutions possibles
+
+data.gouv.fr envisage de référencer explicitement des données non disponibles en "open data pur", i.e. soumises à des conditions d'accès ou de réutilisation.
+
+Dans ce cadre il pourra être intéressant de s'inspirer des travaux INSPIRE et GD4H, au moins pour assurer une rétro-compatibilité. L'introduction de champs supplémentaires au simple `license` sera certainement nécessaire. L'utilisation de vocabulaires contrôlés est encouragée quand cela est possible, [cf les préconisations belges](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md#annexe-ii).
+
+Le champ `license` gagnerait aussi à utiliser un vocabulaire contrôlé externe (ex : SPDX) pour une meilleure interopérabilité. On notera qu'INSPIRE ou le CNIG n'émet pas de recommandation sur ce vocabulaire.
+
+Pour le moissonnage :
+- `dct:accessRights` et `dct:License` sont disponibles en DCAT sur `Dataset` et `DataService`. Attention, data.gouv.fr utilise aujourd'hui les attributs de `Distribution` (`DataService` nouveau en DCAT v2)
+- CKAN  :
+	- Expose `use_constraints` via un mapping vers un vocabulaire interne de licence
+	- Expose `limitations-on-public-access` (ISO) dans `access_constraints` 
+	- Calcule `access-constraints` (ISO) mais ne l'expose pas
 
 ## Evolutions du modèle et de l'API data.gouv.fr
 
@@ -255,7 +287,7 @@ Ecosphères [expose certaines métadonnées](https://preprod.data.developpement-
 [...]
 ```
 
-data.gov (qui utilise CKAN) modélise également certains attributs sous forme d'URI dans les extras :
+data.gov (qui utilise CKAN) modélise également [certains attributs sous forme d'URI dans les extras](https://catalog.data.gov/api/3/action/package_show?id=fdic-failed-bank-list) :
 
 ```json
 "extras": [
