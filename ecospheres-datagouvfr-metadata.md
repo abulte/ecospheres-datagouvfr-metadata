@@ -141,7 +141,36 @@ CKAN avec `ckanext-spatial` calcule les attributs suivants issus des propriété
 - `spatial-resolution`
 - `spatial-resolution-units`
 
-Pas de support constaté sur OpenDataSoft.
+Pas de support constaté sur OpenDataSoft (legacy).
+
+### Dates de référence
+
+XXX
+
+### Etendue / couverture temporelle
+
+| Champ data.gouv.fr        | Remplissage | Note |
+| ------------------------- | ----------- | ---- |
+| `temporal_coverage.start` | 12 %        |      |
+| `temporal_coverage.end`   | 12 %        |      |
+
+Voir [l'analyse détaillée Ecopshères](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md#etendue-temporelle). A noter : peu utilisé en pratique dans les catalogues INSPIRE. Permet de définir plusieurs périodes discontinues.
+
+#### Alimentation
+
+##### CKAN
+
+CKAN `ckanext-spatial` expose les extras `temporal-extent-begin` et `temporal-extent-end`, qui sont la première occurence de l'une ou l'autre des propriétés INSPIRE, donc une seule période retenue.
+
+Le moissonneur CKAN de data.gouv.fr utilise les extras `temporal_start` et `temporal_end`, d'origine inconnue. Seuls 3 jeux de données sur data.gouv.fr semble exploiter ces extras.
+
+> Amélioration possible : utiliser les "bons" attributs.
+
+##### DCAT
+
+data.gouv.fr expose `dct:temporal,DCT.PeriodOfTime,DCAT.startDate|DCAT.endDate` et ingère le même format, ce qui est conforme aux spécifications en dehors de la cardinalité (`0..1` vs `0..n`).
+
+110 jeux de données moissonnées en DCAT bénéficie de ce format.
 
 ### Point de contact
 
@@ -279,7 +308,7 @@ II.6. LANGUE DE LA RESSOURCE
 II.8. ENCODAGE DES CARACTERES
 II.9. TYPE DE REPRESENTATION GEOGRAPHIQUE
 V.2.  REFERENTIEL DE COORDONNEES
-VI. REFERENCE TEMPORELLE
+~~VI. REFERENCE TEMPORELLE~~
 VII.1 GENEALOGIE
 ~~VII.2 RESOLUTION SPATIALE~~
 VII.3 COHERENCE TOPOLOGIQUE
