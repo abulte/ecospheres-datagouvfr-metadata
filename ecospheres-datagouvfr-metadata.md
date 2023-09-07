@@ -37,12 +37,48 @@ On considérera également que data.gouv.fr est principalement alimenté par un 
 
 ## Métadonnées
 
+### Identificateur de ressource unique 
+
+| Champ data.gouv.fr               | Remplissage | Note |
+| -------------------------------- | ----------- | ---- |
+| `dataset.id`                     | 100 %       |      |
+| `dataset.resources[].id`         | 100 %       |      |
+| `dataset.harvest.dct_identifier` | ?           |      |
+| `dataset.harvest.remote_id`      | ?           |      |
+
+data.gouv.fr crée pour chaque jeu de données et chaque ressource associée un identifiant réputé unique (MongoID ou UUID).
+
+Dans le cadre du moissonnage, data.gouv.fr stocke également :
+- pour DCAT le `dct:idenfifier`
+- pour CKAN et OpenDatasoft un `remote_id` exposé par ces plateformes comme étant identifiant (souvent un slug)
+
+Lors de l'exposition RDF d'un élément du catalogue, data.gouv.fr expose `dct_identifer` s'il est présent, sinon son propre id.
+
+Les spécifications INSPIRE permettent d'avoir plusieurs identifiants pour une même ressource (à condition qu'un même identifiant ne pointe pas vers plusieurs ressources). Le CNIG préconise un identifiant sous forme d'URL afin d'associer un espace de nom (nom de domaine) à un identifiant (chemin).
+
+La cardinalité `1..*` pour l'identifiant est aujourd'hui incompatible avec le moissonnage data.gouv.fr, cet identifiant unique servant en effet de pivot pour reconnaitre un jeu de données. On notera également que les [spécifications belges](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md#instanciation-de-dcatdataset) indiquent une cardinalité de 1.
+
+CKAN `ckanext-spatial` [récupère cet identifiant](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvested_metadata.py#L553) avec une cardinalité `0..1` dans le moissonnage ISO et ne l'expose pas par défaut.
+
+#### Evolution possible
+
+Il pourrait être intéressant pour data.gouv.fr de supporter des identifiants multiples :
+- Résolution de problèmes de compatibilité avec certains catalogues Geonetwork (cf issue dédiée) ;
+- Meilleure modélisation de la "chaine de moissonnage".
+
+Le mécanisme pourrait être le suivant :
+- data.gouv.fr conserve évidemment ses identifiants techniques ;
+- Introduction d'une liste `harvest.identifiers` reprenant les `identifiers` moissonnés ;
+- Au moissonnage, data.gouv.fr vérifie si _un des_ identifiants exposés correspond à un des identifiants stockés et effectue ainsi le rapprochement — cette comparaison se faisant dans le scope d'une plateforme donnée (i.e. un moissonneur), le risque de collision est faible même si l'identifiant ne l'est pas (e.g. un slug) ;
+- Lors de l'exposition RDF, data.gouv.fr peut exposer plusieurs `identifiers` moissonnés en plus de sien. Il sera alors intéressant de l'exposer sous la forme `https://www.data.gouv.fr/datasets/{id-technique}` afin de suivre les recommendations du CNIG et de permettre de reconnaitre cet identifiant parmi les autres.
+
 ### Couverture spatiale
 
 | Champ data.gouv.fr      | Remplissage | Note                                                                                  |
 | ----------------------- | ----------- | ------------------------------------------------------------------------------------- |
 | `dataset.spatial.zones` | 19 %        | lien vers une ou plusieurs [geozones](https://www.data.gouv.fr/fr/datasets/geozones/) | 
 | `dataset.spatial.geom`  | 3 %         | géométrie GeoJSON                                                                     |
+
 #### Alimentation
 
 Les zones sont alimentées via un formulaire sur la page d'édition d'un jeu de données ou par l'API.
@@ -162,9 +198,40 @@ Le principal facteur limitant est l'absence de support sur data.gouv.fr de vocab
 
 On notera que CKAN n'expose pas non plus le vocabulaire utilisé dans les métadonnées INSPIRE le cas échéant. Seul le support de vocabulaires contrôlés via DCAT pourrait être ajouté par data.gouv.fr.
 
-### Formats
+### Format / encodage
 
-XXX
+| Champ data.gouv.fr           | Remplissage | Note |
+| ---------------------------- | ----------- | ---- |
+| `dataset.resources[].format` | 98%         |      |
+| `dataset.resources[].mime`   | 53%         |      |
+
+INSPIRE utilise la notion d'encodage comme proche de celle de format utilisée sur data.gouv.fr.
+
+*Description du ou des concepts en langage machine spécifiant la représentation des objets de données dans un enregistrement, un fichier, un message, un dispositif de stockage ou un canal de transmission.*
+
+INSPIRE préconise d'associer un format à une version dès que c'est possible (e.g. GeoTIFF 1.0). Il est possible de spécifier plusieurs formats. Aucun vocabulaire contrôlé n'est préconisé.
+
+Sur data.gouv.fr l'information `format` est portée par chaque ressource, avec une liste semi-ouverte (auto-complétion et ajout de valeurs si besoin). Pas de support formel de la notion de version, même si on peut remplir `geotiff-1.0` par exemple si besoin.
+
+data.gouv.fr supporte aussi la notion de [type Mime](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types), également sous forme de liste semi-ouverte. Cette information est extraite automatiquement pour les fichiers uploadés sur data.gouv.fr et renseignée par le producteur sinon.
+
+#### Alimentation
+
+##### CKAN
+
+CKAN expose `mimetype` et `format`, que le moissonneur data.gouv.fr utilise.  `ckanext-spatial` [calcule `format` en fonction de l'URL de la ressource](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvesters/base.py#L63), pas depuis un attribut ISO/INSPIRE. `data-format` [est calculé depuis les flux ISO](https://github.com/ecolabdata/ckanext-spatial/blob/944ae4dd973f37a291514823b27607ea296af05a/ckanext/spatial/harvested_metadata.py#L805C1-L805C1) mais non exposé.
+
+##### DCAT
+
+Les spécifications préconisent l'utilisation d'un [vocabulaire contrôlé](http://publications.europa.eu/resource/authority/file-type) pour la propriété `Distribution-dct:format` mais pas de mapping depuis `gmd:distributionFormat`. Le CNIG préconise le mapping vers `dct:format`.
+
+Exemple catalogue fédéral belge :
+
+```xml
+<dct:format rdf:resource="http://publications.europa.eu/resource/authority/file-type/CSV"/>
+```
+
+Le moissonneur data.gouv.fr utilise `DCAT.mediaType` et `DCT.format` pour remplir les attributs correspondants en texte libre.
 
 ### Contraintes en matière d’accès et d’utilisation / Licence
 
@@ -198,6 +265,29 @@ Pour le moissonnage :
 	- Expose `use_constraints` via un mapping vers un vocabulaire interne de licence
 	- Expose `limitations-on-public-access` (ISO) dans `access_constraints` 
 	- Calcule `access-constraints` (ISO) mais ne l'expose pas
+
+### Autres champs à traiter
+
+
+II.1. INTITULE DE LA RESSOURCE
+II.2. RESUME DE LA RESSOURCE
+II.3. TYPE DE LA RESSOURCE
+II.4. LOCALISATEUR DE LA RESSOURCE
+~~II.5. IDENTIFICATEUR DE RESSOURCE UNIQUE~~
+II.6. LANGUE DE LA RESSOURCE
+~~II.7. ENCODAGE~~
+II.8. ENCODAGE DES CARACTERES
+II.9. TYPE DE REPRESENTATION GEOGRAPHIQUE
+V.2.  REFERENTIEL DE COORDONNEES
+VI. REFERENCE TEMPORELLE
+VII.1 GENEALOGIE
+~~VII.2 RESOLUTION SPATIALE~~
+VII.3 COHERENCE TOPOLOGIQUE
+VIII. Conformité
+X. ORGANISATIONS RESPONSABLES DE L’ETABLISSEMENT, DE LA GESTION, DE LA MAINTENANCE ET DE LA DIFFUSION DES SERIES ET SERVICES DE DONNEES GEOGRAPHIQUES
+XI.2. DATE DES METADONNEES
+XI.3. LANGUE DES METADONNEES
+XI.4. IDENTIFIANT DE LA METADONNEE
 
 ## Evolutions du modèle et de l'API data.gouv.fr
 
