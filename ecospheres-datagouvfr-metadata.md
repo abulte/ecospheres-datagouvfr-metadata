@@ -29,7 +29,7 @@ On considérera également que data.gouv.fr est principalement alimenté par un 
 
 ## Références
 
-- [Code : mapping RDF (DCAT) vers data.gouv.fr](https://github.com/opendatateam/udata/blob/550f32bb009a6409598264dff47ecb3cc696e5cb/udata/core/dataset/rdf.py#L448)
+- [Code : mapping RDF (DCAT) vers et depuis data.gouv.fr](https://github.com/opendatateam/udata/blob/550f32bb009a6409598264dff47ecb3cc696e5cb/udata/core/dataset/rdf.py#L448)
 - [Code : moissonneur CKAN de data.gouv.fr](https://github.com/opendatateam/udata-ckan/) 
 - [Guide de saisie des métadonnées INSPIRE du CNIG](https://cnig.gouv.fr/IMG/pdf/guide-de-saisie-des-elements-de-metadonnees-inspire-v2.0-1.pdf)
 - [Mapping DCAT / INSPIRE de data.gov.be](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md)
@@ -145,7 +145,88 @@ Pas de support constaté sur OpenDataSoft (legacy).
 
 ### Dates de référence
 
-XXX
+Dans l'analyse Ecosphères :
+- [date de publication](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md#date-de-publication)
+- [date de dernière révision](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md#date-de-dernière-révision)
+- [date de création](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md#date-de-création)
+
+NB : certaines constatations dans l'analyse ci-dessus sont basées sur et biaisées par un flux DCAT Geocatalogue qui n'expose pas ou peu de dates.
+
+| Champ data.gouv.fr                | Remplissage | Note                                                       |
+| --------------------------------- | ----------- | ---------------------------------------------------------- |
+| `dataset.created_at`              | 100%        | Moissonnée ou système                                      |
+| `dataset.last_modified`           | 100%        | Moissonnée ou système (ou calculé pour une ressource)      | 
+| `dataset.last_update`             | 100%        | Calculé comme le plus récent modified dataset vs resources |
+| `dataset.harvest.last_update`     |             | Dernier passage du moissonneur                             |
+| `dataset.harvest.modified_at`     |             | Moissonnée                                                 |
+| `dataset.harvest.created_at`      |             | Moissonnée                                                 |
+| `dataset.internals.*_at_internal` | 100%        | Système                                                    |
+
+Ces attributs sont répliqués au niveau de la ressource, à l'exception de `last_update`.
+
+[Calcul de `last_modified` pour un jeu de données](https://github.com/opendatateam/udata/blob/8bf8e516826bf72ee746f897a2e441508f3bdc12/udata/core/dataset/models.py#L607C29-L607C29) sur data.gouv.fr : max de date de modification interne (hors moissonnage) et modification moissonnée, si pas moissonnée date interne.
+
+[Calcul de `last_modified` pour une ressource](https://github.com/opendatateam/udata/blob/8bf8e516826bf72ee746f897a2e441508f3bdc12/udata/core/dataset/models.py#L309) sur data.gouv.fr : max de date de modification interne (hors moissonnage) et modification moissonnée, si pas moissonnée date détectée par crawler, sinon date interne.
+
+data.gouv.fr n'a pas de notion de date de publication. Elle existait pour une ressource [avant d'être supprimée](https://github.com/opendatateam/udata/pull/2807) en raison de la confusion qu'elle créait et de son faible taux de remplissage. On notera que sa présence au niveau de la ressource ne permettait de toute façon pas un mapping avec INSPIRE (plutôt niveau jeu de données). 
+
+Le guide de saisie des métadonnées INSPIRE du CNIG ne donne pas beaucoup de contexte pour le remplissage de la date de publication, à part peut-être un lien avec une date d'entrée en vigueur (pour des raisons réglementaires ?). L'accent est mis surtout sur la date de création et sur la date de révision le cas échéant.
+
+#### Alimentation
+
+##### CKAN
+
+CKAN expose par défaut sur le jeu de données :
+- `metadata_created`, utilisée par data.gouv.fr pour `created_at`
+- `metadata_modified`, utilisée par data.gouv.fr pour `last_modified` (cf plus haut)
+
+CKAN expose par défaut sur la ressource :
+- `created`, utilisée par data.gouv.fr pour `created_at`
+- `last_modified`, utilisée par data.gouv.fr pour `last_modified` (cf plus haut)
+
+CKAN `ckanext-spatial` calcule les attributs INSPIRE :
+- `date-released` depuis `dataset-reference-date.publication`
+- `date-updated` depuis `dataset-reference-date.revision` 
+- `date-created` depuis `dataset-reference-date.creation`
+
+L'attribut parent est exposé dans l'extra `dataset-reference-date`, cf ci-dessous :
+
+```json
+{
+	"value": "[{\"type\": \"creation\", \"value\": \"2016-01-01\"}, {\"type\": \"edition\", \"value\": \"2023-06-13\"}, {\"type\": \"publication\", \"value\": \"\"}]",
+	"key": "dataset-reference-date"
+},
+```
+
+Il n'y a pas de mapping de ces dates spécifiques INSPIRE vers les attributs par défaut de CKAN. En effet, ces dates concernent normalement les données et non les métadonnées (cf paragraphe plus bas sur cette distinction).
+
+data.gouv.fr n'utilise pas ces dates INSPIRE au moissonnage.
+
+##### DCAT
+
+data.gouv.fr consomme et expose le mapping suivant pour un jeu de données et une ressource :
+- `created_at` : `DCT.issued`
+- `last_modified` : `DCT.modified` (avec règle de gestion, cf plus haut)
+
+Les spécifications belges proposent le mapping suivant sur un `Dataset` et un `DataService` :
+- creation : `dct:created`
+- revision : `dct:modified`
+- publication : `dct:issued`
+
+Le CNIG semble avoir fait une erreur dans son mapping en échangeant création et dernière révision :
+- publication : `dct:issued`
+- création : `dct:modified`
+- dernière révision : `dct:created`
+
+#### Evolutions possibles
+
+La date de modification data.gouv.fr devrait être exposée et consommée en tant que `dct:modified`.
+
+La date de publication pourrait être gérée en tant que métadonnée supplémentaire, facilement accessible via DCAT et `ckanext-spatial`. Attention toutefois à la confusion entre date des données et des métadonnées (cf plus bas).
+
+#### Date des métadonnées
+
+**See also : date des métadonnées**
 
 ### Etendue / couverture temporelle
 
@@ -206,7 +287,7 @@ CKAN avec `ckanext-spatial` calcule `topic-category` le cas échéant mais ne l'
 data.gouv.fr ne prend pas en compte cette propriété dans le moissonnage DCAT ou CKAN et ne possède pas de support de vocabulaire contrôlé.
 
 > Le support de cette propriété en tant que simple mot clé (cf ci-dessous) via le moissonneur DCAT est trivial.
->Quels sont les usages réels de la propriété ?
+> Quels sont les usages réels de la propriété ?
 
 ### Mots clés
 
