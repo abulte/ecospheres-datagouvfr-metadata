@@ -34,6 +34,7 @@ On considérera également que data.gouv.fr est principalement alimenté par un 
 - [Guide de saisie des métadonnées INSPIRE du CNIG](https://cnig.gouv.fr/IMG/pdf/guide-de-saisie-des-elements-de-metadonnees-inspire-v2.0-1.pdf)
 - [Mapping DCAT / INSPIRE de data.gov.be](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md)
 - [Mapping DCAT / INSPIRE du CNIG (WIP)](https://github.com/cnigfr/metadonnee/tree/main/MappingINSPIRE-DCAT)
+- [Export DCAT du catalogue fédéral belge](https://github.com/fedict/dcat)
 
 ## Métadonnées
 
@@ -226,7 +227,29 @@ La date de publication pourrait être gérée en tant que métadonnée suppléme
 
 #### Date des métadonnées
 
-**See also : date des métadonnées**
+INSPIRE fait une distinction entre dates des données (cf dates de référence plus haut) et date des métadonnées (autre attribut discuté ici).
+
+Pour les dates des données, on peut citer le guide CNIG pour la date de création :
+
+*Il s’agit de la date de création de la série de données ou de l’ensemble de séries de données, mais pas la date de création du ou des objets du monde réel décrits. Typiquement, si la série de données est une photographie prise le 15 mai 2000 d’un monument historique datant de 1920, la date de création de la ressource est le 15 mai 2000.*
+
+La couverture temporelle (cf plus bas) s'appliquerait elle plutôt aux objects sous-jacents aux données (1920 dans l'exemple ci-dessus).
+
+La date des métadonnées est moins bien explicitée. On peut faire l'hypothèse qu'elle se réfère à la date de création puis de modification de l'enregistrement sur le ou les catalogues qui exposent la ressource.
+
+data.gouv.fr mélange les notions de dates des données (possiblement récupérées via le moissonnage) et les dates des métadonnées (dates système). Vu la complexité du sujet, il est possible que de nombreux autres catalogues fassent cette confusion.
+
+##### Alimentation
+
+CKAN `ckanext-spatial` calcule et expose `metadata-date`. Cette date sert de référence pour savoir si un objet a été modifié au moissonnage. Elle n'alimente pas `metadata_modified`. Cet attribut n'est pas utilisé par le moissonnage CKAN data.gouv.fr.
+
+Les spécifications DCAT/INSPIRE belges et le CNIG proposent un mapping vers `dcat:CatalogRecord/dct:modified`. L'object `CatalogRecord` se situerait à un niveau "au-dessus" du `dcat:Dataset`. Pas d'exemple trouvé dans le catalogue fédéral belge.
+
+##### Evolution possible
+
+En fonction du schéma DCAT retenu en exposition et en entrée, il pourra être intéressant d'intégrer la notion de `CatalogRecord` et de cette métadonnée. Il est possible de récupérer la métadonnée via `ckanext-spatial` ou via DCAT le cas échéant.
+
+La complexité de l'interprétation de cette métadonnée interroge toutefois sur son utilité au delà d'une logique de moissonnage INSPIRE (i.e. quelle valeur ajoutée pour les portails ?).
 
 ### Etendue / couverture temporelle
 
