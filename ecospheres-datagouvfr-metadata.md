@@ -1,55 +1,56 @@
 
 Objet : récapitulatif des travaux et réflexions sur le support par data.gouv.fr de nouvelles métadonnées utiles à Ecosphères.
 
-- [[#Préambule|Préambule]]
-- [[#Méthodologie et concepts|Méthodologie et concepts]]
-- [[#Documents liés|Documents liés]]
-- [[#Références|Références]]
-- [[#Métadonnées|Métadonnées]]
-	- [[#Métadonnées#Identificateur de ressource unique|Identificateur de ressource unique]]
-		- [[#Identificateur de ressource unique#Evolution possible|Evolution possible]]
-	- [[#Métadonnées#Couverture spatiale|Couverture spatiale]]
-		- [[#Couverture spatiale#Alimentation|Alimentation]]
-		- [[#Couverture spatiale#Evolution|Evolution]]
-			- [[#Evolution#Geozones|Geozones]]
-			- [[#Evolution#Géométries|Géométries]]
-	- [[#Métadonnées#Granularité et résolution spatiales|Granularité et résolution spatiales]]
-		- [[#Granularité et résolution spatiales#Granularité|Granularité]]
-		- [[#Granularité et résolution spatiales#Résolution|Résolution]]
-	- [[#Métadonnées#Dates de référence|Dates de référence]]
-		- [[#Dates de référence#Alimentation|Alimentation]]
-			- [[#Alimentation#CKAN|CKAN]]
-			- [[#Alimentation#DCAT|DCAT]]
-		- [[#Dates de référence#Evolutions possibles|Evolutions possibles]]
-		- [[#Dates de référence#Date des métadonnées|Date des métadonnées]]
-			- [[#Date des métadonnées#Alimentation|Alimentation]]
-			- [[#Date des métadonnées#Evolution possible|Evolution possible]]
-	- [[#Métadonnées#Etendue / couverture temporelle|Etendue / couverture temporelle]]
-		- [[#Etendue / couverture temporelle#Alimentation|Alimentation]]
-			- [[#Alimentation#CKAN|CKAN]]
-			- [[#Alimentation#DCAT|DCAT]]
-	- [[#Métadonnées#Point de contact|Point de contact]]
-		- [[#Point de contact#Alimentation|Alimentation]]
-			- [[#Alimentation#CKAN|CKAN]]
-			- [[#Alimentation#OpenDataSoft / DCAT|OpenDataSoft / DCAT]]
-	- [[#Métadonnées#Catégorie thématique|Catégorie thématique]]
-	- [[#Métadonnées#Mots clés|Mots clés]]
-	- [[#Métadonnées#Format / encodage|Format / encodage]]
-		- [[#Format / encodage#Alimentation|Alimentation]]
-			- [[#Alimentation#CKAN|CKAN]]
-			- [[#Alimentation#DCAT|DCAT]]
-	- [[#Métadonnées#Contraintes en matière d’accès et d’utilisation / Licence|Contraintes en matière d’accès et d’utilisation / Licence]]
-		- [[#Contraintes en matière d’accès et d’utilisation / Licence#Evolutions possibles|Evolutions possibles]]
-	- [[#Métadonnées#Type de la ressource / ensemble de séries|Type de la ressource / ensemble de séries]]
-		- [[#Type de la ressource / ensemble de séries#Evolution possible|Evolution possible]]
-- [[#Autres champs à traiter|Autres champs à traiter]]
-- [[#Evolutions du modèle et de l'API data.gouv.fr|Evolutions du modèle et de l'API data.gouv.fr]]
-	- [[#Evolutions du modèle et de l'API data.gouv.fr#Modèle|Modèle]]
-	- [[#Evolutions du modèle et de l'API data.gouv.fr#API|API]]
-- [[#Annexes|Annexes]]
-	- [[#Annexes#Export API CKAN `ckanext-spatial`|Export API CKAN `ckanext-spatial`]]
-	- [[#Annexes#Export RDF/DCAT OpenDataSoft|Export RDF/DCAT OpenDataSoft]]
-	- [[#Annexes#Analyse LL sur le sujet type de ressource|Analyse LL sur le sujet type de ressource]]
+- [Préambule](#pr%C3%A9ambule)
+- [Méthodologie et concepts](#m%C3%A9thodologie-et-concepts)
+- [Documents liés](#documents-li%C3%A9s)
+- [Références](#r%C3%A9f%C3%A9rences)
+- [Métadonnées](#m%C3%A9tadonn%C3%A9es)
+	- [Identificateur de ressource unique](#identificateur-de-ressource-unique)
+		- [Evolution possible](#evolution-possible)
+	- [Couverture spatiale](#couverture-spatiale)
+		- [Alimentation](#alimentation)
+		- [Evolution](#evolution)
+			- [Geozones](#geozones)
+			- [Géométries](#g%C3%A9om%C3%A9tries)
+	- [Granularité et résolution spatiales](#granularit%C3%A9-et-r%C3%A9solution-spatiales)
+		- [Granularité](#granularit%C3%A9)
+		- [Résolution](#r%C3%A9solution)
+	- [Dates de référence](#dates-de-re%CC%81fe%CC%81rence)
+		- [Alimentation](#alimentation)
+			- [CKAN](#ckan)
+			- [DCAT](#dcat)
+		- [Evolutions possibles](#evolutions-possibles)
+		- [Date des métadonnées](#date-des-m%C3%A9tadonn%C3%A9es)
+			- [Alimentation](#alimentation)
+			- [Evolution possible](#evolution-possible)
+	- [Etendue / couverture temporelle](#etendue--couverture-temporelle)
+		- [Alimentation](#alimentation)
+			- [CKAN](#ckan)
+			- [DCAT](#dcat)
+	- [Point de contact](#point-de-contact)
+		- [Alimentation](#alimentation)
+			- [CKAN](#ckan)
+			- [OpenDataSoft / DCAT](#opendatasoft--dcat)
+	- [Catégorie thématique](#cat%C3%A9gorie-th%C3%A9matique)
+	- [Mots clés](#mots-cl%C3%A9s)
+	- [Format / encodage](#format--encodage)
+		- [Alimentation](#alimentation)
+			- [CKAN](#ckan)
+			- [DCAT](#dcat)
+	- [Contraintes en matière d’accès et d’utilisation / Licence](#contraintes-en-matie%CC%80re-dacce%CC%80s-et-dutilisation--licence)
+		- [Evolutions possibles](#evolutions-possibles)
+	- [Type de la ressource / ensemble de séries](#type-de-la-ressource--ensemble-de-s%C3%A9ries)
+		- [Evolution possible](#evolution-possible)
+- [Autres champs à traiter](#autres-champs-%C3%A0-traiter)
+- [Evolutions du modèle et de l'API data.gouv.fr](#evolutions-du-mod%C3%A8le-et-de-lapi-datagouvfr)
+	- [Modèle](#mod%C3%A8le)
+	- [API](#api)
+- [Annexes](#annexes)
+	- [Export API CKAN `ckanext-spatial`](#export-api-ckan-ckanext-spatial)
+	- [Export RDF/DCAT OpenDataSoft](#export-rdfdcat-opendatasoft)
+	- [Analyse LL sur le sujet type de ressource](#analyse-ll-sur-le-sujet-type-de-ressource)
+
 
 ## Préambule
 
