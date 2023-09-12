@@ -19,10 +19,31 @@ On considérera également que data.gouv.fr est principalement alimenté par un 
 | OpenDataSoft     | 10333 | 21.09%  |
 | MAAF             | 13    | 0.03%   |
 | CKAN             | 3479  | 7.10%   |
-| geo.data.gouv.fr | 13694 | 27.95%  | 
+| geo.data.gouv.fr | 13694 | 27.95%  |
 | Total            | 48996 |         |
 
+## Méthodologie et concepts
+
+Le point de départ de l'analyse d'un concept dans la partie **Métadonnées** ci-dessous part généralement de la définition INSPIRE, et plus précisément de sa définition ou de son analyse dans les documents "Prise en charge des métadonnées INSPIRE par data.gouv.fr" et "Guide de saisie des métadonnées INSPIRE du CNIG" (cf "Documents liés").
+
+Les métadonnées étudiées ne sont pas exhaustives et ont été choisies de manière opportuniste : présentant un intérêt fort en matière d'interopérabilité et/ou pouvant apporter une valeur ajoutée lors de l'analyse. Par exemple la métadonnée "Titre" étant triviale elle a été mise de côté. La partie **Autres champs à traiter** recense les métadonnées au sens INSPIRE non analysées à date.
+
+Pour chaque métadonnée, l'analyse suivante est faite :
+- Support ou non par data.gouv.fr d'un concept équivalent et similaire et calcul du taux de complétion par analyse du catalogue ;
+- Support ou non par CKAN avec ou sans `ckanext-spatial` et le cas échéant comment ;
+- Support ou non par DCAT en étudiant le mapping proposé par le profil belge et le mapping du CNIG ;
+- Quand la métadonnée est supportée par data.gouv.fr, on analyse comment elle est alimentée par les moissonneurs DCAT ou CKAN ;
+- S'il y a eu lieu, proposition d'évolutions pour le support de la métadonnée par data.gouv.fr ou références vers des évolutions en cours.
+
+On parlera de "Ecosphères CKAN" pour désigner [la plateforme CKAN d'Ecosphères moissonnant des catalogues INSPIRE](https://preprod.data.developpement-durable.gouv.fr).
+
+On parlera d'*exposition* `ckanext-spatial` lorsque [cette extension](https://github.com/ckan/ckanext-spatial) moissonne cette métadonnée via les flux ISO/INSPIRE et la réexpose via l'API standard de CKAN. On parlera de *calcul* de la métadonnée lorsqu'elle est extraite des flux mais non réexposée.
+
+En plus de l'analyse des métadonnées, un embryon de réflexion est engagée sur l'**évolution du modèle et de l'API data.gouv.fr** dans une section dédiée.
+
 ## Documents liés
+
+Autres documents produits dans le cadre du projet Ecosphères :
 
 - [Mapping des métadonnées existantes Ecosphères / data.gouv.fr (voir onglet Ecosphères)](https://docs.google.com/spreadsheets/d/1zHLJxZ6Lya74a2lRMqLMC4KSaXtdSH6LqqkClmgaP3g/edit?usp=sharing)
 - [Prise en charge des métadonnées INSPIRE par data.gouv.fr](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md)
@@ -35,6 +56,8 @@ On considérera également que data.gouv.fr est principalement alimenté par un 
 - [Mapping DCAT / INSPIRE de data.gov.be](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md)
 - [Mapping DCAT / INSPIRE du CNIG (WIP)](https://github.com/cnigfr/metadonnee/tree/main/MappingINSPIRE-DCAT)
 - [Export DCAT du catalogue fédéral belge](https://github.com/fedict/dcat)
+- [Code : mapping XML du moissonneur ISO/INSPIRE de `ckanext-spatial`](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvested_metadata.py)
+- [Code : alimentation du jeu de données CKAN par `ckanext-spatial` au moissonnage](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvesters/base.py)
 
 ## Métadonnées
 
@@ -399,12 +422,36 @@ Pour le moissonnage :
 	- Expose `limitations-on-public-access` (ISO) dans `access_constraints` 
 	- Calcule `access-constraints` (ISO) mais ne l'expose pas
 
-### Autres champs à traiter
 
+### Type de la ressource / ensemble de séries
+
+Cf [analyse détaillée Ecosphères](https://github.com/ecolabdata/ecospheres/blob/main/doc/inspire_vs_data_gouv.md#type-de-la-ressource). On s'intéresse ici à l'ensemble de séries, c'est-à-dire à la modélisation d'une liste de jeux de données liés que "les gestionnaires de données [...] utilisent pour regrouper des jeux de données formant un ensemble cohérent et pertinent pour les réutilisateurs."
+
+Se référer également à l'annexe "Analyse LL sur le sujet type de ressource" pour plus de détails.
+
+data.gouv.fr n'a pas de support à date de cette notion. Les évolutions prévues sur le sujet des "topics" peuvent s'en rapprocher en ce qu'ils constituent une liste arbitraire d'objets liés entre eux, par exemple des jeux de données. data.gouv.fr expose également des "jeux de données recommandés", soit de manière éditoriale soit de manière automatique, dans les extras d'un jeu de données.
+
+Côté INSPIRE, la modélisation concrète de cette notion ne semble pas bien définie et on trouve des approches différentes selon les catalogues : soit une indication de la présence d'un parent dans une fiche enfant, soit l'indication de la présence d'enfants dans une fiche parent.
+
+Ecosphères CKAN [a traité le cas de Geo-IDE catalogue](https://github.com/ecolabdata/ckanext-ecospheres/blob/9c849a4089a7ba6ce94c56faf02869cea3f96f51/ckanext/ecospheres/spatial/harvester.py#L387) en exploitant la métadonnée `aggregation-info` calculée par `ckanext-spatial` ainsi que d'autres attributs XML extraits pour l'occasion. Ceci aboutit à l'exposition d'une métadonnée `series_members` avec la liste des identifiants des enfants sur le jeu de données parents et la métadonnées `in_series` sur les jeux de données enfants contenant la liste des autres jeux de données enfants.
+
+Côté DCAT, les spécifications belges ne traitent pas de ce sujet. Côté CNIG, [cette issue recense les différents possibilités](https://github.com/cnigfr/metadonnee/issues/14), à savoir `dct:isPartOf` et `dct:hasPart` en DCAT v2 ou [`dcat:DatasetSeries`](https://www.w3.org/TR/vocab-dcat-3/#Class:Dataset_Series) en v3. On note que "la notion de série est peu utilisée au niveau des plateformes régionales."
+
+#### Evolution possible
+
+Il pourrait être intéressant pour data.gouv.fr de supporter cette notion d'ensemble de jeux de données, et ce au delà de la compatibilité INSPIRE.
+
+Le moissonnage s'avère complexe et sera à arbitrer en fonction des opportunités et des possibilités des plateformes source. L'évolution des paradigmes utilisé dans les catalogues DCAT sera à suivre. On notera que CKAN Ecosphères parvient à 42% de remplissage de la métadonnée `in_series`, a priori à travers le seul Geo-IDE catalogue.
+
+Comme évoqué plus tôt, cette notion peut être intuitivement rapprochée [des travaux sur les topics](https://github.com/etalab/data.gouv.fr/issues/1117). Toutefois, via ce concept, on ne pourra pas exprimer une relation entre un jeu de données parent et ses enfants, par exemple [Ilots déclarés à la PAC 2012 et le groupe de cultures dominant - Rhône-Alpes](https://catalogue.datara.gouv.fr/geonetwork/srv/api/records/fff02ef4-8918-4d42-a6ab-53a0d83468bf/formatters/xml) et son enfant [Ilots déclarés à la PAC 2012 et le groupe de cultures dominant - Ardèche](https://catalogue.datara.gouv.fr/geonetwork/srv/api/records/5b786cc5-0159-4e45-96dd-1ef8564c298a/formatters/xml). De plus, cela conduirait à la création de nombreux topics pas forcément pertinent. Une métadonnée similaire parent/enfant à celle proposée par Ecosphères CKAN serait certainement mieux adaptée. data.gouv.fr pourrait en tirer parti pour enrichir l'interface en proposant une navigation parent/enfant/frères.
+
+## Autres champs à traiter
+
+Plan du guide de saisie des métadonnées du CNIG dont les parties n'ont pas été traitées dans ce document :
 
 II.1. INTITULE DE LA RESSOURCE
 II.2. RESUME DE LA RESSOURCE
-II.3. TYPE DE LA RESSOURCE
+~~II.3. TYPE DE LA RESSOURCE~~
 II.4. LOCALISATEUR DE LA RESSOURCE
 ~~II.5. IDENTIFICATEUR DE RESSOURCE UNIQUE~~
 II.6. LANGUE DE LA RESSOURCE
@@ -418,7 +465,7 @@ VII.1 GENEALOGIE
 VII.3 COHERENCE TOPOLOGIQUE
 VIII. Conformité
 X. ORGANISATIONS RESPONSABLES DE L’ETABLISSEMENT, DE LA GESTION, DE LA MAINTENANCE ET DE LA DIFFUSION DES SERIES ET SERVICES DE DONNEES GEOGRAPHIQUES
-XI.2. DATE DES METADONNEES
+~~XI.2. DATE DES METADONNEES~~
 XI.3. LANGUE DES METADONNEES
 XI.4. IDENTIFIANT DE LA METADONNEE
 
@@ -1089,5 +1136,26 @@ https://data.rennesmetropole.fr/api/v2/catalog/exports/dcat?lang=fr&where=datase
     </dcat:service>
   </rdf:Description>
 </rdf:RDF>
-
 ```
+
+### Analyse LL sur le sujet type de ressource
+
+INSPIRE ne modélise pas vraiment, tout ce que tu as c'est une définition très large. "« ensemble de séries de données géographiques » : une compilation de séries de données géographiques partageant la même spécification de produit." [1]. Pour le reste, il n'y a rien qui distingue concrètement un ensemble de séries d'une série dans la réglementation INSPIRE, hormis la valeur de la métadonnée "Type de la ressource". Dans DCAT v3, dcat:DatasetSeries est une sous-classe de dcat:Dataset, et sur le principe cette vision me semble assez proche de celle d'INSPIRE.  
+  
+INSPIRE est clair sur l'existence d'une relation entre l'ensemble et les séries qui le composent, mais cette relation n'est pas mentionnée dans les métadonnées obligatoires, ni pour l'ensemble, ni pour les séries. Ce qui explique sans doute pourquoi le Guide de saisie des éléments de métadonnées INSPIRE du CNIG n'en parle pas non plus. Il y a effectivement plus de choses dans le Guide de gestion des catalogues de métadonnées INSPIRE [3]. En pratique, celui-ci recommande de matérialiser la relation dans les XML, pour les séries uniquement, en utilisant identificationInfo.citation.serie. Mais je ne connais pas de catalogue qui ait fait ce choix. Géo-IDE Catalogue utilise identificationInfo.aggregationInfo pour matérialiser la relation dans les métadonnées du parent uniquement - exemple [4]. Je ne sais pas si ça vient de Prodige ou de GeoNetwork, mais dans d'autres catalogues comme datAra la relation est matérialisée avec parentIdentifier dans les fiches de métadonnées des séries : fiche d'un ensemble [5] ; XML de l'ensemble [6] ; fiche d'une des séries de l'ensemble [7] ; XML de la série [8]. GéoIDE Catalogue se sert aussi de parentIdentifier, mais pour autre chose. Je crois que ça identifie la fiche de métadonnées standard qui a servi de modèle - exemple de deux fiches de métadonnées d'ensembles basées sur le même modèle "plan de prévention des risques" : [9] et [10].  
+  
+Dans le code d'Ecosphères, j'avais uniquement traité le cas de GéoIDE [11]. Outre la disponibilité des relations dans les XML, les deux points problématiques étaient que :  
+- Ce n'est pas parce qu'il y a une relation que les métadonnées de l'objet visé sont également exposées.  
+- Sauf à faire en sorte de moissonner séparément les séries et les ensembles (possible avec des filtres dans la requête au CSW, c'est ce que j'avais fait), on ne maîtrise pas l'ordre dans lequel sont récupérées les fiches. Comme les relations ne sont à ma connaissance jamais matérialisées à la fois sur l'ensemble et sur les séries, il y a toujours le risque de traiter la fiche de l'objet qui contient la référence avant d'avoir moissonné celle de l'objet qu'elle vise. Pas idéal quand on aimerait recréer la relation dans le nouveau catalogue.  
+
+[1] [https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX%3A02008R1205-20081224](https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX%3A02008R1205-20081224)  
+[2] [http://cnig.gouv.fr/IMG/pdf/guide-de-saisie-des-elements-de-metadonnees-inspire-v2.0-1.pdf](http://cnig.gouv.fr/IMG/pdf/guide-de-saisie-des-elements-de-metadonnees-inspire-v2.0-1.pdf)  
+[3] [https://cnig.gouv.fr/IMG/documents_wordpress/2014/01/2012-08-20_guide-catalogues-md-inspire-v1.0.pdf#page=11](https://cnig.gouv.fr/IMG/documents_wordpress/2014/01/2012-08-20_guide-catalogues-md-inspire-v1.0.pdf#page=11)  
+[4] [https://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-dataset?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&RESULTTYPE=results&elementSetName=full&TYPENAMES=gmd:MD_Metadata&OUTPUTSCHEMA=http://www.isotc211.org/2005/gmd&ID=fr-120066022-ldd-a2086c57-1888-4270-a5b7-84c67b83585e](https://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-dataset?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&RESULTTYPE=results&elementSetName=full&TYPENAMES=gmd:MD_Metadata&OUTPUTSCHEMA=http://www.isotc211.org/2005/gmd&ID=fr-120066022-ldd-a2086c57-1888-4270-a5b7-84c67b83585e)  
+[5] [https://catalogue.datara.gouv.fr/geonetwork/srv/fre/catalog.search#/metadata/fff02ef4-8918-4d42-a6ab-53a0d83468bf](https://catalogue.datara.gouv.fr/geonetwork/srv/fre/catalog.search#/metadata/fff02ef4-8918-4d42-a6ab-53a0d83468bf)  
+[6] [https://catalogue.datara.gouv.fr/geonetwork/srv/api/records/fff02ef4-8918-4d42-a6ab-53a0d83468bf/formatters/xml](https://catalogue.datara.gouv.fr/geonetwork/srv/api/records/fff02ef4-8918-4d42-a6ab-53a0d83468bf/formatters/xml)  
+[7] [https://catalogue.datara.gouv.fr/geonetwork/srv/fre/catalog.search#/metadata/fff02ef4-8918-4d42-a6ab-53a0d83468bf](https://catalogue.datara.gouv.fr/geonetwork/srv/fre/catalog.search#/metadata/fff02ef4-8918-4d42-a6ab-53a0d83468bf)  
+[8] [https://catalogue.datara.gouv.fr/geonetwork/srv/api/records/5b786cc5-0159-4e45-96dd-1ef8564c298a/formatters/xml](https://catalogue.datara.gouv.fr/geonetwork/srv/api/records/5b786cc5-0159-4e45-96dd-1ef8564c298a/formatters/xml)  
+[9] [https://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-dataset?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&RESULTTYPE=results&elementSetName=full&TYPENAMES=gmd:MD_Metadata&OUTPUTSCHEMA=http://www.isotc211.org/2005/gmd&ID=fr-120066022-ldd-a2086c57-1888-4270-a5b7-84c67b83585e](https://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-dataset?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&RESULTTYPE=results&elementSetName=full&TYPENAMES=gmd:MD_Metadata&OUTPUTSCHEMA=http://www.isotc211.org/2005/gmd&ID=fr-120066022-ldd-a2086c57-1888-4270-a5b7-84c67b83585e)  
+[10] [https://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-dataset?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&RESULTTYPE=results&elementSetName=full&TYPENAMES=gmd:MD_Metadata&OUTPUTSCHEMA=http://www.isotc211.org/2005/gmd&ID=fr-120066022-ldd-bca2eac8-583e-481b-a300-fd4c7266afe5](https://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-dataset?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&RESULTTYPE=results&elementSetName=full&TYPENAMES=gmd:MD_Metadata&OUTPUTSCHEMA=http://www.isotc211.org/2005/gmd&ID=fr-120066022-ldd-bca2eac8-583e-481b-a300-fd4c7266afe5)  
+[11] [https://github.com/ecolabdata/ckanext-ecospheres/blob/9c849a4089a7ba6ce94c56faf02869cea3f96f51/ckanext/ecospheres/spatial/harvester.py#L387](https://github.com/ecolabdata/ckanext-ecospheres/blob/9c849a4089a7ba6ce94c56faf02869cea3f96f51/ckanext/ecospheres/spatial/harvester.py#L387)
