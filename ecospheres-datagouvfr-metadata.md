@@ -109,10 +109,11 @@ Autres documents produits dans le cadre du projet Ecosphères :
 - [Export DCAT du catalogue fédéral belge](https://github.com/fedict/dcat)
 - [Code : mapping XML du moissonneur ISO/INSPIRE de `ckanext-spatial`](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvested_metadata.py)
 - [Code : alimentation du jeu de données CKAN par `ckanext-spatial` au moissonnage](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvesters/base.py)
+- [Mapping DCAT-INSPIRE de GeoDCAT-AP](https://semiceu.github.io/GeoDCAT-AP/releases/2.0.0/#detailed-usage-notes-and-examples)
 
 ## Métadonnées
 
-### Identificateur de ressource unique 
+### Identificateur de ressource unique / fiche de métadonnée
 
 | Champ data.gouv.fr               | Remplissage | Note |
 | -------------------------------- | ----------- | ---- |
@@ -135,17 +136,29 @@ La cardinalité `1..*` pour l'identifiant est aujourd'hui incompatible avec le m
 
 CKAN `ckanext-spatial` [récupère cet identifiant](https://github.com/ckan/ckanext-spatial/blob/e59a295431247fcd605fe55bb4fd9a2ecfc28d2b/ckanext/spatial/harvested_metadata.py#L553) avec une cardinalité `0..1` dans le moissonnage ISO et ne l'expose pas par défaut.
 
+**Il convient de distinguer l'identifiant d'un jeu de données (ici appelé identificateur de ressource unique) et l'identifiant d'une fiche de métadonnée. L'identifiant de fiche est propre à un catalogue, elle correspondrait à l'identifiant data.gouv.fr. L'identifiant de jeu de données (ou identifiant INSPIRE) identifie la donnée quelque soit le catalogue sur laquelle elle se trouve.**
+
 #### Evolution possible
 
-Il pourrait être intéressant pour data.gouv.fr de supporter des identifiants multiples :
-- Résolution de problèmes de compatibilité avec certains catalogues Geonetwork (cf issue dédiée) ;
-- Meilleure modélisation de la "chaine de moissonnage".
+~~Il pourrait être intéressant pour data.gouv.fr de supporter des identifiants multiples :~~
+~~- Résolution de problèmes de compatibilité avec certains catalogues Geonetwork (cf issue dédiée) ;~~
+~~- Meilleure modélisation de la "chaine de moissonnage".~~
 
-Le mécanisme pourrait être le suivant :
-- data.gouv.fr conserve évidemment ses identifiants techniques ;
-- Introduction d'une liste `harvest.identifiers` reprenant les `identifiers` moissonnés ;
-- Au moissonnage, data.gouv.fr vérifie si _un des_ identifiants exposés correspond à un des identifiants stockés et effectue ainsi le rapprochement — cette comparaison se faisant dans le scope d'une plateforme donnée (i.e. un moissonneur), le risque de collision est faible même si l'identifiant ne l'est pas (e.g. un slug) ;
-- Lors de l'exposition RDF, data.gouv.fr peut exposer plusieurs `identifiers` moissonnés en plus de sien. Il sera alors intéressant de l'exposer sous la forme `https://www.data.gouv.fr/datasets/{id-technique}` afin de suivre les recommendations du CNIG et de permettre de reconnaitre cet identifiant parmi les autres.
+~~Le mécanisme pourrait être le suivant :~~
+~~- data.gouv.fr conserve évidemment ses identifiants techniques ;~~
+~~- Introduction d'une liste `harvest.identifiers` reprenant les `identifiers` moissonnés ;~~
+~~- Au moissonnage, data.gouv.fr vérifie si _un des_ identifiants exposés correspond à un des identifiants stockés et effectue ainsi le rapprochement — cette comparaison se faisant dans le scope d'une plateforme donnée (i.e. un moissonneur), le risque de collision est faible même si l'identifiant ne l'est pas (e.g. un slug) ;~~
+~~- Lors de l'exposition RDF, data.gouv.fr peut exposer plusieurs `identifiers` moissonnés en plus de sien. Il sera alors intéressant de l'exposer sous la forme `https://www.data.gouv.fr/datasets/{id-technique}` afin de suivre les recommendations du CNIG et de permettre de reconnaitre cet identifiant parmi les autres.~~
+
+Les préconisations précédentes visaient à gérer une cardinalité multiple sur les identifiants. Après analyse, il apparait que cette cardinalité a peu d'intérêt / de support en pratique.
+
+On se concentrera plutôt sur la gestion de deux notions distinctes :
+- L'identifiant au sens INSPIRE doit être stocké en tant que tel ; l'implémentation actuelle au moissonnage DCAT en tant que `harvest.dct_identifier` semble satisfaisante de ce point de vue. Attention toutefois au manque de support côté CKAN. Le fait de ré-exposer cet identifiant en tant que `dct:identifier` est également cohérent.  
+- L'URL de la fiche de métadonnée (~ identifiant d'une fiche de métadonnée) qu'il convient de conserver au moissonnage ; l'implémentation actuelle en tant que `harvest.remote_url` semble satisfaisante.
+
+On pourra envisager l'exposition en DCAT de `remote_url` en `dcat:landingPage`, comme au moissonnage.
+
+On pourra également envisager l'utilisation de `CatalogRecord` lors de l'exposition en DCAT afin d'exposer l'URI ou l'identifiant du jeu de données sur data.gouv.fr, notamment dans le cas où `dct:identifier` prend une valeur moissonnée au niveau du `Dataset`.
 
 ### Couverture spatiale
 
@@ -183,6 +196,17 @@ L'alimentation se fera :
 > A creuser :
 > - quid des autres vocabulaires utilisées par Ecosphères ? Seraient-ils utiles à data.gouv.fr ?
 > - mécanique de remplissage de la métadonnée par Ecosphères (extraire les spécifications)
+
+En DCAT, il sera possible d'exploiter `dct:spatial,dct:Location` comme dans l'exemple ci-dessous. Cet attribut peut faire référence à différents vocabulaires contrôlés. Il pourra être intéressant de supporter une synonymie depuis différents vocabulaires vers celui utilisé par data.gouv.fr. [Voir cette liste de synonymes dans différents vocabulaires pour un département](https://skosmos.loterre.fr/D63/fr/).
+
+```xml
+<dct:spatial>
+   <dct:Location rdf:about="https://sws.geonames.org/2802361/"/>
+</dct:spatial>
+```
+
+On notera qu'Ecosphères CKAN utilise un mécanisme de fallback depuis une éventuelle information nommée de couverture spatiale au niveau jeu de données vers un attribut de l'organisation qui publie ce jeu de données. E.g. la DDT de la Somme publie un jeu de données sans zone associée, il sera associé à la Somme. Ce mécanisme pourrait également être utilisé par data.gouv.fr.
+
 ##### Géométries
 
 Pas d'évolution structurelle prévue sur ce point côté data.gouv.fr.
@@ -192,6 +216,16 @@ Pas d'évolution structurelle prévue sur ce point côté data.gouv.fr.
 > - DCAT : [attribut dcat:bbox](https://github.com/belgif/inspire-dcat/blob/main/DCATAPprofil.fr.md#k-dctlocation) dans Dcat:Dataset > Dcat:Location ?
 > 
 > A noter : la géométrie n'est pas une métadonnée priorisée d'un point usager final Ecosphères.
+
+Exemple d'implémentation en DCAT :
+
+```xml
+<dct:spatial>
+   <dct:Location>
+	  <dcat:bbox rdf:datatype="http://www.opengis.net/ont/geosparql#wktLiteral">POLYGON((2.23701 51.8753,3.36329 51.8753,3.36329 51.0939,2.23701 51.0939,2.23701 51.8753))</dcat:bbox>
+   </dct:Location>
+</dct:spatial>
+```
 
 ### Granularité et résolution spatiales
 
